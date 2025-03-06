@@ -26,14 +26,38 @@ function Appointment() {
   const itemsPerPage = 50; // Number of items per page
 
   useEffect(() => {
-    const getAppointmentList = async () => {
-      const res = await fetch("http://localhost:8085/getnullappointment");
-      const getData = await res.json();
-      setAppointmentList(getData);
-      setFilteredAppointments(getData); // Initialize filtered appointments
+    const getRejectedAppointments = async () => {
+      const subadmin_id = sessionStorage.getItem("subadmin_id"); // Retrieve subadmin_id from sessionStorage
+
+      if (!subadmin_id) {
+        console.error("No subadmin_id found in sessionStorage");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `http://localhost:8085/getadmintosubadminappointment?subadmin_id=${subadmin_id}`
+        );
+        const data = await res.json();
+
+        if (res.status === 200 && Array.isArray(data)) {
+          setAppointmentList(data);
+          setFilteredAppointments(data);
+        } else {
+          setAppointmentList([]); // Ensure it's an empty array instead of undefined
+          setFilteredAppointments([]);
+        }
+      } catch (error) {
+        console.error("Error fetching rejected appointments:", error);
+        setAppointmentList([]); // Handle network errors
+        setFilteredAppointments([]);
+      }
     };
-    getAppointmentList();
+
+    getRejectedAppointments();
   }, []);
+
+
 
   const handleViewDetails = (appointment) => {
     setSelectedAppointment(appointment);

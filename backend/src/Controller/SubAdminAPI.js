@@ -142,7 +142,6 @@ const ADD_SUBADMIN = (req, res) => {
     return res.status(400).json("All fields are required!");
   }
 
-
   const subadminSql = `
     INSERT INTO subadminmaster (name, mname, lname, country, state, city, pincode, address, mobileno, email, username, password)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -247,27 +246,27 @@ const UPDATE_SUBADMIN = (req, res) => {
   } = req.body;
 
   // Validate that all required fields are provided
-  if (
-    !name ||
-    !mname ||
-    !lname ||
-    !country ||
-    !state ||
-    !city ||
-    !pincode ||
-    !address ||
-    !mobileno ||
-    !email ||
-    !username ||
-    !password
-  ) {
-    return res.status(400).json("All fields are required!");
-  }
+  // if (
+  //   !name ||
+  //   !mname ||
+  //   !lname ||
+  //   !country ||
+  //   !state ||
+  //   !city ||
+  //   !pincode ||
+  //   !address ||
+  //   !mobileno ||
+  //   !email ||
+  //   !username ||
+  //   !password
+  // ) {
+  //   return res.status(400).json("All fields are required!");
+  // }
 
   // Validate pincode
-  if (isNaN(pincode) || pincode.length !== 6) {
-    return res.status(400).json("Pincode must be a 6-digit number.");
-  }
+  // if (isNaN(pincode) || pincode.length !== 6) {
+  //   return res.status(400).json("Pincode must be a 6-digit number.");
+  // }
 
   const sql = `
     UPDATE subadminmaster
@@ -351,28 +350,84 @@ const GET_ALL_ASSISTANT_FOR_SUBADMIN = (req, res) => {
   });
 };
 
+// const GET_ALL_APPOINTMENT_FOR_SUBADMIN = (req, res) => {
+//   const subadmin_id = req.query.subadmin_id; // Get subadmin_id from request query
+
+//   if (!subadmin_id) {
+//     return res
+//       .status(401)
+//       .json({ error: "Unauthorized: No assistant ID provided" });
+//   }
+
+//   const sql = `
+//     SELECT DISTINCT a.*
+//     FROM appointment a
+//     JOIN subadminmaster s
+//     ON FIND_IN_SET(a.pincode, s.pincode) > 0
+//     WHERE s.subadmin_id = ? AND a.status = 'Unassigned';
+//     `;
+
+//   db.query(sql, [subadmin_id], (err, data) => {
+//     if (err) {
+//       return res.status(500).json({ error: "Failed to fetch data" });
+//     }
+//     res.json(data);
+//   });
+// };
 const GET_ALL_APPOINTMENT_FOR_SUBADMIN = (req, res) => {
   const subadmin_id = req.query.subadmin_id; // Get subadmin_id from request query
 
   if (!subadmin_id) {
     return res
       .status(401)
-      .json({ error: "Unauthorized: No assistant ID provided" });
+      .json({ error: "Unauthorized: No subadmin ID provided" });
   }
 
-  const sql = `
+  // Fetch appointments based on pincode (existing logic)
+  const sqlByPincode = `
     SELECT DISTINCT a.*
     FROM appointment a
     JOIN subadminmaster s 
     ON FIND_IN_SET(a.pincode, s.pincode) > 0
-    WHERE s.subadmin_id = ? AND a.status = 'Unassigned';
-    `;
+    WHERE s.subadmin_id = ? 
+    AND a.status = 'Unassigned';
+  `;
 
-  db.query(sql, [subadmin_id], (err, data) => {
-    if (err) {
-      return res.status(500).json({ error: "Failed to fetch data" });
+  // Fetch appointments assigned directly to subadmin (for 'Assigned_by_subadmin' status)
+  const sqlBySubadminId = `
+  SELECT a.*
+  FROM appointment a
+  JOIN assign_appointment_subadmin asa 
+  ON a.appointment_id = asa.appointment_id
+  WHERE asa.subadmin_id = ? 
+  AND a.status = 'Assigned_to_subadmin';
+  `;
+
+  // Execute both queries in parallel
+  db.query(sqlByPincode, [subadmin_id], (err1, dataByPincode) => {
+    if (err1) {
+      return res.status(500).json({ error: "Failed to fetch data by pincode" });
     }
-    res.json(data);
+
+    db.query(sqlBySubadminId, [subadmin_id], (err2, dataBySubadminId) => {
+      if (err2) {
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch data assigned to subadmin" });
+      }
+
+      // Merge both results, ensuring no duplicates
+      const mergedData = [...dataByPincode, ...dataBySubadminId];
+
+      // Remove duplicates based on appointment_id
+      const uniqueAppointments = [
+        ...new Map(
+          mergedData.map((item) => [item.appointment_id, item])
+        ).values(),
+      ];
+
+      res.json(uniqueAppointments);
+    });
   });
 };
 
@@ -517,7 +572,6 @@ LEFT JOIN (
 ) ar ON a.appointment_no = ar.appointment_nos
 WHERE s.subadmin_id = ?
 ORDER BY a.time DESC;
-
     `;
 
   db.query(sql, [subadmin_id], (err, data) => {
@@ -965,6 +1019,71 @@ const GET_COUNT_COMPLETED_APPOINTMENT_OF_SUBADMIN = (req, res) => {
   });
 };
 
+const GET_ADMIN_TO_SUBADMIN_APPOINTMENT = (req, res) => {
+  const { subadmin_id } = req.query; // Extract subadmin_id from query
+
+  // Debugging log
+  console.log("Subadmin ID:", subadmin_id);
+
+  if (!subadmin_id) {
+    return res
+      .status(401)
+      .json({ error: "Unauthorized: No subadmin ID provided" });
+  }
+
+  // Query to fetch appointments assigned to the given subadmin_id
+  const sql = `
+  SELECT DISTINCT a.*
+  FROM appointment a
+  JOIN assign_appointment_subadmin asa 
+  ON a.appointment_id = asa.appointment_id
+  WHERE asa.subadmin_id = ?
+  AND a.status = 'Assigned_to_subadmin';
+  `;
+
+  db.query(sql, [subadmin_id], (err, data) => {
+    if (err) {
+      console.error("SQL Error:", err);
+      return res.status(500).json({ error: "Failed to fetch data" });
+    }
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No appointments found for the given subadmin",
+      });
+    }
+    res.json(data);
+  });
+};
+
+const GET_ASSIGNED_APPOINTMENTS_COUNT_FOR_SUBADMIN = (req, res) => {
+  const { subadmin_id } = req.query; // Extract subadmin_id from query
+
+  console.log("Subadmin ID:", subadmin_id); // Debugging log
+
+  if (!subadmin_id) {
+    return res
+      .status(401)
+      .json({ error: "Unauthorized: No subadmin ID provided" });
+  }
+
+  // SQL query to count assigned appointments for the subadmin
+  const sql = `
+    SELECT COUNT(DISTINCT a.appointment_id) AS assigned_count
+    FROM appointment a
+    JOIN assign_appointment_subadmin asa 
+    ON a.appointment_id = asa.appointment_id
+    WHERE asa.subadmin_id = ? AND a.status = 'Assigned_to_subadmin';
+  `;
+
+  db.query(sql, [subadmin_id], (err, data) => {
+    if (err) {
+      console.error("SQL Error:", err);
+      return res.status(500).json({ error: "Failed to fetch data" });
+    }
+    res.json(data[0].assigned_count);
+  });
+};
+
 module.exports = {
   ASSIGN_TO_SUBADMIN,
   GET_ALL_SUBADMIN,
@@ -992,4 +1111,6 @@ module.exports = {
   GET_REJECTED_APPOINTMENTS_COUNT_FOR_SUBADMIN,
   GET_TODAYS_SUBADMIN_APPOINTMENTS_COUNT,
   GET_COUNT_COMPLETED_APPOINTMENT_OF_SUBADMIN,
+  GET_ADMIN_TO_SUBADMIN_APPOINTMENT,
+  GET_ASSIGNED_APPOINTMENTS_COUNT_FOR_SUBADMIN,
 };

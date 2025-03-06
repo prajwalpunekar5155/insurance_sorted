@@ -50,7 +50,7 @@ function Appointment() {
 
       const data = await response.json();
       alert(data.message || "Appointment assigned successfully!");
-      navigate("/AssignAppointmentToAssistant");
+      navigate("/AssignAppointmentToTechnician");
     } catch (error) {
       console.error("Error assigning technician:", error);
       alert("Failed to assign technicians");
@@ -654,7 +654,7 @@ function Appointment() {
                               style={{
                                 backgroundColor:
                                   index % 2 === 0 ? "#ffffff" : "#f9f9f9",
-                                borderBottom: "1px solid #ddd", // Adds border between rows
+                                borderBottom: "1px solid #ddd",
                               }}
                             >
                               <td
@@ -682,6 +682,8 @@ function Appointment() {
                                   color:
                                     getcate.rejected_status === "1"
                                       ? "red"
+                                      : getcate.status === "Assigned_to_subadmin"
+                                      ? "blue" // Sky Blue Color for Assigned_by_admin
                                       : "black",
                                 }}
                               >
@@ -693,20 +695,21 @@ function Appointment() {
                                   color:
                                     getcate.rejected_status === "1"
                                       ? "red"
+                                      : getcate.status === "Assigned_to_subadmin"
+                                      ? "#4682B4"
                                       : "black",
                                 }}
                               >
                                 {getcate.name}
                               </td>
-                              {/* <td style={{ padding: "12px 15px" }}>
-                                {getcate.treatment}
-                              </td> */}
                               <td
                                 style={{
                                   padding: "12px 15px",
                                   color:
                                     getcate.rejected_status === "1"
                                       ? "red"
+                                      : getcate.status === "Assigned_to_subadmin"
+                                      ? "#4682B4"
                                       : "black",
                                 }}
                               >
@@ -718,41 +721,26 @@ function Appointment() {
                                   color:
                                     getcate.rejected_status === "1"
                                       ? "red"
+                                      : getcate.status === "Assigned_to_subadmin"
+                                      ? "#4682B4"
                                       : "black",
                                 }}
                               >
                                 {getcate.appointment_no}
                               </td>
-                              {/* <td style={{ padding: "12px 15px" }}>
-                                {getcate.address}
-                              </td>
-                              <td style={{ padding: "12px 15px" }}>
-                                {getcate.country}
-                              </td>
-                              <td style={{ padding: "12px 15px" }}>
-                                {getcate.state}
-                              </td>
-                              <td style={{ padding: "12px 15px" }}>
-                                {getcate.city}
-                              </td> */}
                               <td
                                 style={{
                                   padding: "12px 15px",
                                   color:
                                     getcate.rejected_status === "1"
                                       ? "red"
+                                      : getcate.status === "Assigned_to_subadmin"
+                                      ? "#4682B4"
                                       : "black",
                                 }}
                               >
                                 {getcate.pincode}
                               </td>
-
-                              {/* <td style={{ padding: "12px 15px" }}>
-                                {getcate.insurance_name}
-                              </td>
-                              <td style={{ padding: "12px 15px" }}>
-                                {getcate.tpa_details}
-                              </td> */}
                             </tr>
                           ))}
                         </tbody>

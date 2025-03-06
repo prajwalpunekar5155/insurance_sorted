@@ -44,6 +44,18 @@ router.get("/getnullappointmentcount", AdminAPI.GET_NULL_APPOINTMENT_COUNT);
 router.get("/getnullappointment", AdminAPI.GET_APPOINTMENTS_WITH_NULL_FIELDS);
 router.get("/gettodayappointmentcount", AdminAPI.GET_TODAY_APPOINTMENT_COUNT);
 router.get("/getcompletedappointment", AdminAPI.GET_COMPLETED_APPOINTMENT);
+router.get(
+  "/getAppointmentsForAdminToSubadmin",
+  AdminAPI.APPOINTMENT_FOR_ADMIN_TO_SUBADMIN
+);
+router.get(
+  "/getallappointmentwithreplies",
+  AdminAPI.GET_APPOINTMENTS_WITH_REPLIES
+);
+router.get(
+  "/getAppointmentByLogmasterId/:id",
+  AdminAPI.GET_APPOINTMENT_lOG_BY_ID
+);
 
 // Diagonasic Centre API
 const DiagonasicCentreAPI = require("./src/Controller/DiagonasicCentreAPI");
@@ -146,6 +158,8 @@ router.post("/addAssistant", TechnicianAPI.ADD_ASSISTANT);
 router.put("/updateAssistant/:id", TechnicianAPI.UPDATE_ASSISTANT);
 router.delete("/deleteAssistant/:id", TechnicianAPI.DELETE_ASSISTANT);
 router.post("/assignTechnicians", TechnicianAPI.ASSIGN_TECHNICIAN);
+router.get("/getlogtechnician/:id", TechnicianAPI.GET_LOG_DETAILS_TECHNICIAN);
+router.post("/assignSubadmin", TechnicianAPI.ASSIGN_SUBADMIN);
 
 // Sub-Admin API
 const SubAdminAPI = require("./src/Controller/SubAdminAPI");
@@ -230,6 +244,14 @@ router.get(
   "/getcountsubadmintodayappointment",
   SubAdminAPI.GET_COUNT_COMPLETED_APPOINTMENT_OF_SUBADMIN
 );
+router.get(
+  "/getadmintosubadminappointment",
+  SubAdminAPI.GET_ADMIN_TO_SUBADMIN_APPOINTMENT
+);
+router.get(
+  "/getcountadmintosubadminappointment",
+  SubAdminAPI.GET_ASSIGNED_APPOINTMENTS_COUNT_FOR_SUBADMIN
+);
 
 // Upload Report API
 const UploadReportAPI = require("./src/Controller/UploadReportAPI");
@@ -286,6 +308,10 @@ router.post(
 );
 router.put("/deleteassistant/:id", MobileAPP_API.DELETE_ASSISTANT);
 router.get("/gettestremarkapp", MobileAPP_API.GET_ALL_TEST_REMARK_APP);
+router.get(
+  "/getCompletedAppointmentByTechnician/:id",
+  MobileAPP_API.GET_Add_DETAILS_BY_TECHNICIAN
+);
 
 //Test Remark API
 const Test_Remark = require("./src/Controller/TestRemark");

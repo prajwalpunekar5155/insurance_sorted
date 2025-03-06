@@ -20,7 +20,7 @@ const EditLaboratory = () => {
     password: "",
   });
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Error state for each field
@@ -37,6 +37,37 @@ const EditLaboratory = () => {
     username: "",
     password: "",
   });
+
+  const indianStates = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+  ];
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -102,10 +133,21 @@ const EditLaboratory = () => {
     if (!country) errors.country = "Country is required!";
     if (!state) errors.state = "State is required!";
     if (!city) errors.city = "City is required!";
-    if (!pincode) errors.pincode = "Pincode is required!";
     if (!address) errors.address = "Address is required!";
-    if (pincode && (isNaN(pincode) || pincode.length !== 6)) {
-      errors.pincode = "Pincode must be a 6-digit number.";
+    // Pincode validation
+    if (!pincode) {
+      errors.pincode = "Pincode is required!";
+    } else {
+      // Split pincodes by comma and validate each one
+      const pincodeArray = pincode.split(",").map((pin) => pin.trim());
+
+      for (let pin of pincodeArray) {
+        if (!/^\d{6}$/.test(pin)) {
+          errors.pincode =
+            "Each pincode must be exactly 6 digits and only contain numbers.";
+          break; // Stop validation on first invalid pincode
+        }
+      }
     }
 
     // Validation for new fields
@@ -116,6 +158,33 @@ const EditLaboratory = () => {
     if (!password) errors.password = "Password is required!";
 
     return errors;
+  };
+
+  const handleChangePincode = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "pincode") {
+      // Remove non-numeric characters
+      let cleanedValue = value.replace(/\D/g, "");
+
+      // Add commas after every 6 digits
+      let formattedValue = cleanedValue.replace(/(\d{6})(?=\d)/g, "$1,");
+
+      setFormData({
+        ...formData,
+        pincode: formattedValue,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+
+    setError({
+      ...errors,
+      [name]: "", // Clear error for the field being edited
+    });
   };
 
   const handleSave = async (e) => {
@@ -157,29 +226,25 @@ const EditLaboratory = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    navigate("/laboratory");
+    navigate("/Adminlaboratory");
   };
 
   return (
     <div
+      className="main-wrapper"
       style={{
-        padding: "30px",
-        fontFamily: "'Roboto', sans-serif",
-        backgroundColor: "#f9fafc",
-        minHeight: "100vh",
+        border: "2px solid",
+        borderRadius: "10px",
+        paddingLeft: "50px",
+        paddingRight: "50px",
+        backgroundColor: "#fff",
       }}
     >
-      <div
-        style={{
-          maxWidth: "600px",
-          margin: "0 auto",
-          background: "#fff",
-          borderRadius: "10px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-          padding: "30px",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {/* <div className="page-wrapper"> */}
+      <div style={{ flex: 1, backgroundColor: "#fff", paddingBottom: "10px" }}>
+        <div
+          style={{ display: "flex", gap: "20px", justifyContent: "flex-end" }}
+        >
           <IconButton onClick={() => window.history.back()} color="primary">
             <CloseIcon />
           </IconButton>
@@ -191,75 +256,328 @@ const EditLaboratory = () => {
             textAlign: "center",
           }}
         >
-          Update Diagnostic Centre
+          Update Diagnostic Centre Details
         </h2>
-        <form onSubmit={handleSave}>
-          {/* Existing Fields */}
-          {[
-            "title",
-            "country",
-            "state",
-            "city",
-            "pincode",
-            "address",
-            "name",
-            "mobileno",
-            "email",
-            "username",
-            "password",
-          ].map((field) => (
-            <div key={field}>
-              <label
-                style={{
-                  fontWeight: "bold",
-                  marginBottom: "5px",
-                  textTransform: "capitalize",
-                }}
-              >
-                {field.replace("_", " ")}:
+        <form
+          onSubmit={handleSave}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            maxWidth: "100%",
+          }}
+        >
+          <div style={{ display: "flex", gap: "20px", width: "100%" }}>
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="name" style={{ fontWeight: "bold" }}>
+                Centre Name
               </label>
               <input
-                type={field === "password" ? "password" : "text"}
-                name={field}
-                value={formData[field]}
+                type="text"
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
-                placeholder={`Enter ${field.replace("_", " ")}`}
+                required
                 style={{
                   width: "100%",
-                  padding: "10px",
-                  marginBottom: "15px",
-                  fontSize: "1rem",
-                  borderRadius: "5px",
+                  padding: "12px",
                   border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
                 }}
               />
-              {fieldErrors[field] && (
-                <p style={{ color: "red", fontSize: "0.9rem" }}>
-                  {fieldErrors[field]}
+              {errors.title && (
+                <p style={{ color: "red", fontSize: "12px" }}>{errors.title}</p>
+              )}
+            </div>
+
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="name" style={{ fontWeight: "bold" }}>
+                Owner Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.name && (
+                <p style={{ color: "red", fontSize: "12px" }}>{errors.name}</p>
+              )}
+            </div>
+
+            {/* Mobile Number */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="mobileno" style={{ fontWeight: "bold" }}>
+                Mobile Number
+              </label>
+              <input
+                type="number"
+                name="mobileno"
+                value={formData.mobileno}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.mobileno && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {errors.mobileno}
                 </p>
               )}
             </div>
-          ))}
 
-          {/* Error Message */}
-          {error && <p style={{ color: "red", fontSize: "0.9rem" }}>{error}</p>}
+            {/* Email */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="email" style={{ fontWeight: "bold" }}>
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.email && (
+                <p style={{ color: "red", fontSize: "12px" }}>{errors.email}</p>
+              )}
+            </div>
+          </div>
 
-          {/* Save Button */}
-          <button
-            type="submit"
+          {/* Address */}
+          <div style={{ width: "100%" }}>
+            <label htmlFor="address" style={{ fontWeight: "bold" }}>
+              Address
+            </label>
+            <textarea
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              style={{
+                width: "100%",
+                padding: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                resize: "none",
+                fontSize: "14px",
+                height: "80px",
+              }}
+            ></textarea>
+            {errors.address && (
+              <p style={{ color: "red", fontSize: "12px" }}>{errors.address}</p>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "20px", width: "100%" }}>
+            {/* Username */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="username" style={{ fontWeight: "bold" }}>
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.username && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {errors.username}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="password" style={{ fontWeight: "bold" }}>
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.password && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {errors.password}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Country, State, City, Pincode */}
+          <div style={{ display: "flex", gap: "20px", width: "100%" }}>
+            {/* Country */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="country" style={{ fontWeight: "bold" }}>
+                Country
+              </label>
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                readOnly // Prevents modification
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "#f2f2f2", // Light gray to indicate read-only
+                  cursor: "not-allowed",
+                }}
+              />
+              {errors.country && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {errors.country}
+                </p>
+              )}
+            </div>
+            {/* State Dropdown */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="state" style={{ fontWeight: "bold" }}>
+                State
+              </label>
+              <select
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              >
+                <option value="">Select State</option>
+                {indianStates.map((state, index) => (
+                  <option key={index} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+              {errors.state && (
+                <p style={{ color: "red", fontSize: "12px" }}>{errors.state}</p>
+              )}
+            </div>
+
+            {/* City */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="city" style={{ fontWeight: "bold" }}>
+                City
+              </label>
+              <input
+                type="text"
+                name="city"
+                placeholder="City"
+                value={formData.city}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.city && (
+                <p style={{ color: "red", fontSize: "12px" }}>{errors.city}</p>
+              )}
+            </div>
+
+            {/* Pincode */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="pincode" style={{ fontWeight: "bold" }}>
+                Pincode
+              </label>
+              <input
+                type="text"
+                name="pincode"
+                placeholder="Enter multiple pincodes"
+                value={formData.pincode}
+                onChange={handleChangePincode}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {errors.pincode && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {errors.pincode}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div
             style={{
               width: "100%",
-              padding: "10px",
-              fontSize: "1rem",
-              backgroundColor: "#2E37A4",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
+              display: "flex",
+              justifyContent: "center",
             }}
           >
-            Save Changes
-          </button>
+            <button
+              type="submit"
+              style={{
+                padding: "12px 30px",
+                backgroundColor: "#2E37A4",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "16px",
+              }}
+            >
+              Save
+            </button>
+          </div>
         </form>
 
         {/* Success Modal */}

@@ -6,6 +6,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import InnerNavbar from "../InnerNavbar";
 
+
+
 function Appointment() {
   const { id } = useParams();
   const [appointment, setAppointmentList] = useState([]);
@@ -16,7 +18,7 @@ function Appointment() {
   const [searchQuery, setSearchQuery] = useState(""); // Track the search query
   const itemsPerPage = 50; // Number of items per page
   const [selectedAppointments, setSelectedAppointments] = useState([]);
-  const [technicianId, setTechnicianId] = useState(id);
+  const [subadminId, setTechnicianId] = useState(id);
   const navigate = useNavigate();
 
   const handleCheckboxChange = (appointmentId) => {
@@ -36,13 +38,13 @@ function Appointment() {
     }
 
     try {
-      const response = await fetch("http://localhost:8085/assignTechnicians", {
+      const response = await fetch("http://localhost:8085/assignSubadmin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          technicianId: technicianId, // Use the technicianId from route
+          subadminId: subadminId, // Use the subadminId from route
           appointmentIds: selectedAppointments, // Pass the array of selected appointment IDs
         }),
       });
@@ -62,7 +64,7 @@ function Appointment() {
 
       try {
         const res = await fetch(
-          `http://localhost:8085/getAppointmentsForAdminAssistant?assistant_id=${id}`
+          `http://localhost:8085/getAppointmentsForAdminToSubadmin?subadmin_id=${id}`
         );
         const getData = await res.json();
 
@@ -676,7 +678,7 @@ function Appointment() {
                                   onChange={() =>
                                     handleCheckboxChange(
                                       getcate.appointment_id,
-                                      getcate.technician_id
+                                      getcate.subadmin_id
                                     )
                                   }
                                 />

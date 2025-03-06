@@ -8,7 +8,6 @@ const db = mysql.createConnection({
   database: "insuerence"
 });
 
-
 // const db = mysql.createConnection({
 //   host: "103.165.119.60",
 //   user: "sitsolutionsco_insurance_db",
@@ -21,7 +20,7 @@ db.connect((err) => {
     console.error("Database connection failed: " + err.stack);
     return;
   }
-  console.log("Connected to MySQL database");
+  console.log("Connected to MySQL database"); 
 });
 
 module.exports = db;

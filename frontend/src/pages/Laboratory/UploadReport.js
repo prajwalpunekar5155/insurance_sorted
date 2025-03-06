@@ -69,13 +69,20 @@ function Assistant() {
 
   const handleUpload = async () => {
     if (!selectedFile || !selectedAppointment) {
-      alert("Please select a PDF file first.");
+      alert("Please select an appointment and a PDF file first.");
+      return;
+    }
+
+    const lab_id = sessionStorage.getItem("lab_id"); // Retrieve lab_id from sessionStorage
+    if (!lab_id) {
+      alert("Lab ID not found in session. Please log in again.");
       return;
     }
 
     const formData = new FormData();
     formData.append("report_pdf", selectedFile);
     formData.append("appointment_id", selectedAppointment.appointment_id);
+    formData.append("updated_by", lab_id); // Send lab_id as updated_by
 
     try {
       const res = await fetch("http://localhost:8085/uploadReport", {
@@ -89,13 +96,14 @@ function Assistant() {
 
       alert("Report uploaded successfully, status updated to 'Submitted'");
 
+      // Reset state
       setOpenDialog(false);
       setSelectedFile(null);
       setSelectedAppointment(null);
 
-      // Reload the page after a slight delay to reflect changes
+      // Reload page after a short delay
       setTimeout(() => {
-        window.location.reload(); // Reloads the page
+        window.location.reload();
       }, 500);
     } catch (error) {
       console.error("Error uploading report:", error);
@@ -216,14 +224,15 @@ function Assistant() {
               <div class="row">
                 <div class="col-sm-12">
                   <ul class="breadcrumb">
-                  <Tooltip title="Go Back" arrow>
-                    <IconButton
-                      onClick={() => window.history.back()}
-                      color="primary"
-                    >
-                      <ArrowBackIcon />
-                    </IconButton>
-                    </Tooltip> </ul>
+                    <Tooltip title="Go Back" arrow>
+                      <IconButton
+                        onClick={() => window.history.back()}
+                        color="primary"
+                      >
+                        <ArrowBackIcon />
+                      </IconButton>
+                    </Tooltip>{" "}
+                  </ul>
                 </div>
               </div>
             </div>

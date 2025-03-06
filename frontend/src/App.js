@@ -56,6 +56,7 @@ import LaboratoryDataMissingappointment from "./pages/Laboratory/DataMissingLabo
 import Remark from "./pages/Remark/Remark";
 import AddRemark from "./pages/Remark/AddRemark";
 import EditRemark from "./pages/Remark/EditRemark";
+import AdminLogMaster from "./pages/LogMaster/AdminLogMaster";
 function App() {
   return (
     <BrowserRouter>
@@ -179,7 +180,7 @@ function App() {
           path="/assignedsubadminappointments/:status"
           element={<SubadminAssignedAppointment />}
         />
-         <Route
+        <Route
           path="/assignedlaboratoryappointments/:status"
           element={<LaboratoryAssignedAppointment />}
         />
@@ -195,6 +196,10 @@ function App() {
         <Route path="/remark" element={<Remark />}></Route>
         <Route path="/addremark" element={<AddRemark />}></Route>
         <Route path="/edit-remark/:id" element={<EditRemark />}></Route>
+        <Route
+          path="/appointmentlogmaster/:id"
+          element={<AdminLogMaster />}
+        ></Route>
       </Routes>
     </BrowserRouter>
   );

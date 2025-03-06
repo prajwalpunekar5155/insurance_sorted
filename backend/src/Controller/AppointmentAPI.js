@@ -486,6 +486,7 @@ const GET_NULL_APPOINTMENT_COUNT = (req, res) => {
   });
 };
 
+
 const GET_APPOINTMENTS_WITH_NULL_FIELDS = (req, res) => {
   const sql = `
     SELECT * FROM appointment
@@ -530,6 +531,97 @@ const GET_COMPLETED_APPOINTMENT = (req, res) => {
   });
 };
 
+const APPOINTMENT_FOR_ADMIN_TO_SUBADMIN = (req, res) => {
+  const subadmin_id = req.query.subadmin_id; // Fetch subadmin ID from query
+
+  if (!subadmin_id) {
+    return res
+      .status(401)
+      .json({ error: "Unauthorized: No subadmin ID provided" });
+  }
+
+  // Get subadmin's pincodes
+  const getSubadminPincodesSQL = `SELECT pincode FROM subadminmaster WHERE subadmin_id = ?`;
+
+  db.query(getSubadminPincodesSQL, [subadmin_id], (err, subadminData) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch subadmin data" });
+    }
+
+    if (subadminData.length === 0) {
+      return res.status(404).json({ error: "Subadmin not found" });
+    }
+
+    const subadminPincodes = subadminData[0].pincode.split(","); // Convert pincodes to array
+    console.log("Subadmin Pincodes: ", subadminPincodes);
+
+    // Fetch unassigned appointments for the subadmin's pincodes
+    const getAppointmentsSQL = `
+      SELECT * FROM appointment
+      WHERE FIND_IN_SET(pincode, ?) > 0
+      AND status = 'Unassigned'
+    `;
+
+    db.query(getAppointmentsSQL, [subadminPincodes.join(",")], (err, appointmentData) => {
+      if (err) {
+        console.log("Error fetching appointments: ", err);
+        return res.status(500).json({ error: "Failed to fetch unassigned appointments" });
+      }
+
+      if (appointmentData.length === 0) {
+        return res.json({ message: "No unassigned appointments found" });
+      }
+
+      res.json(appointmentData);
+    });
+  });
+};
+
+const GET_APPOINTMENTS_WITH_REPLIES = (req, res) => {
+  const sql = `
+    SELECT 
+      a.*, 
+      ar.*
+    FROM 
+      appointment a
+    INNER JOIN 
+      appointment_replies ar ON a.appointment_no = ar.appointment_nos
+    ORDER BY 
+      a.time DESC
+  `; // Fetch appointments with replies and order by time
+
+  db.query(sql, (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Failed to fetch data", error: err });
+    }
+    return res.json(data);
+  });
+};
+
+const GET_APPOINTMENT_lOG_BY_ID = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT lm.*, a.appointment_no, a.name 
+    FROM log_master lm
+    JOIN appointment a ON lm.appointment_id = a.appointment_id
+    WHERE lm.appointment_id = ?`;
+
+  db.query(sql, [id], (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Failed to fetch appointment details" });
+    }
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    res.json(data);
+  });
+};
+
+
+
+
 module.exports = {
   Get_ALL_APPOINTMENT,
   Get_ALL_APPOINTMENTS,
@@ -555,5 +647,8 @@ module.exports = {
   GET_NULL_APPOINTMENT_COUNT,
   GET_APPOINTMENTS_WITH_NULL_FIELDS,
   GET_TODAY_APPOINTMENT_COUNT,
-  GET_COMPLETED_APPOINTMENT
+  GET_COMPLETED_APPOINTMENT,
+  APPOINTMENT_FOR_ADMIN_TO_SUBADMIN,
+  GET_APPOINTMENTS_WITH_REPLIES,
+  GET_APPOINTMENT_lOG_BY_ID
 };

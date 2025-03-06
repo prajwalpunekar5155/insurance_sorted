@@ -55,7 +55,7 @@ function Appointment() {
 
         if (!res.ok) {
           throw new Error("Failed to fetch appointment data");
-        }
+        } 
 
         const getData = await res.json();
         setAppointmentList(getData);

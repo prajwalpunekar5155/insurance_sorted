@@ -201,16 +201,26 @@ function Home() {
     };
 
     const fetchNullAppointmentCount = async () => {
+      const subadminId = sessionStorage.getItem("subadmin_id"); // Retrieve subadmin_id from sessionStorage
+
+      if (!subadminId) {
+        console.error("No subadmin_id found in sessionStorage");
+        return;
+      }
+
       try {
         const response = await axios.get(
-          "http://localhost:8085/getnullappointmentcount",
+          `http://localhost:8085/getcountadmintosubadminappointment?subadmin_id=${subadminId}`,
           { withCredentials: true }
         );
+
         setAppointmentNullCount(response.data);
       } catch (error) {
         console.error("Error fetching appointment count:", error);
       }
     };
+
+  
 
     fetchAppointments();
     fetchAppointmentCount();
@@ -527,7 +537,7 @@ function Home() {
                       </h2>
                     </div>
                     <div className="dash-content dash-count">
-                      <h4>Data Missing Appointment</h4>
+                      <h4>Appointment Assigned By Admin</h4>
 
                       {/* <p>
                       <span className="passive-view">

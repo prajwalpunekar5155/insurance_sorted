@@ -35,7 +35,9 @@ function Appointment() {
   useEffect(() => {
     const getAppointmentList = async () => {
       try {
-        const res = await fetch("http://localhost:8085/getallappointment");
+        const res = await fetch(
+          "http://localhost:8085/getallappointmentwithreplies"
+        );
         const getData = await res.json();
 
         console.log("Fetched Data:", getData); // Debug API response
@@ -263,7 +265,6 @@ function Appointment() {
                                   />
                                 </a>
                               </div>
-                             
                             </div>
                           </div>
                         </div>
@@ -813,6 +814,21 @@ function Appointment() {
                                         style={{ marginRight: "8px" }}
                                       />
                                       Edit
+                                    </Link>
+                                    <Link
+                                      to={`/appointmentlogmaster/${getcate.appointment_id}`}
+                                      className="dropdown-item"
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        textDecoration: "none",
+                                        color: "inherit",
+                                      }}
+                                    >
+                                      <VisibilityIcon
+                                        style={{ marginRight: "8px" }}
+                                      />
+                                      Appointment History
                                     </Link>
 
                                     {/* <a

@@ -14,23 +14,21 @@ import NavBar from "../navBar";
 import { IconButton, Tooltip } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-
 function Assistant() {
   const [appointment, setAppointmentList] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [showAppointmentDetails, setShowAppointmentDetails] = useState(false); 
+  const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(""); 
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const itemsPerPage = 50; 
+  const itemsPerPage = 50;
 
-  
   useEffect(() => {
     const getAppointmentList = async () => {
-      const res = await fetch("http://localhost:8085/getAllassistant");
+      const res = await fetch("http://localhost:8085/getAllSubadmin");
       const getData = await res.json();
       setAppointmentList(getData);
       setFilteredAppointments(getData);
@@ -151,13 +149,13 @@ function Assistant() {
               <div class="row">
                 <div class="col-sm-12">
                   <ul class="breadcrumb">
-                  <Tooltip title="Go Back" arrow>
-                    <IconButton
-                      onClick={() => window.history.back()}
-                      color="primary"
-                    >
-                      <ArrowBackIcon />
-                    </IconButton>{" "}
+                    <Tooltip title="Go Back" arrow>
+                      <IconButton
+                        onClick={() => window.history.back()}
+                        color="primary"
+                      >
+                        <ArrowBackIcon />
+                      </IconButton>{" "}
                     </Tooltip>
                   </ul>
                 </div>
@@ -172,7 +170,7 @@ function Assistant() {
                       <div class="row align-items-center">
                         <div class="col">
                           <div class="doctor-table-blk">
-                            <h3>Assign Appointment To Technician</h3>
+                            <h3>Assign Appointment To Sub-Admin</h3>
                             <div class="doctor-search-blk">
                               <div class="top-nav-search table-search-blk">
                                 <form>
@@ -474,7 +472,7 @@ function Assistant() {
                         <tbody>
                           {currentAppointments.map((getcate, index) => (
                             <tr
-                              key={getcate.assistant_id}
+                              key={getcate.subadmin_id}
                               style={{
                                 backgroundColor:
                                   index % 2 === 0 ? "#ffffff" : "#f9f9f9",
@@ -517,7 +515,7 @@ function Assistant() {
                                 }}
                               >
                                 <Link
-                                  to={`/selectappointmentAdmin/${getcate.assistant_id}`}
+                                  to={`/selectappointmentAdmin/${getcate.subadmin_id}`}
                                   style={{
                                     padding: "8px 15px",
                                     backgroundColor: "#2E37A4",

@@ -260,27 +260,27 @@ const UPDATE_LABORATORY = (req, res) => {
     password,
   } = req.body;
 
-  // Validate that all required fields are provided
-  if (
-    !title ||
-    !country ||
-    !state ||
-    !city ||
-    !pincode ||
-    !address ||
-    !name ||
-    !mobileno ||
-    !email ||
-    !username ||
-    !password
-  ) {
-    return res.status(400).json("All fields are required!");
-  }
+  // // Validate that all required fields are provided
+  // if (
+  //   !title ||
+  //   !country ||
+  //   !state ||
+  //   !city ||
+  //   !pincode ||
+  //   !address ||
+  //   !name ||
+  //   !mobileno ||
+  //   !email ||
+  //   !username ||
+  //   !password
+  // ) {
+  //   return res.status(400).json("All fields are required!");
+  // }
 
-  // Validate pincode
-  if (isNaN(pincode) || pincode.length !== 6) {
-    return res.status(400).json("Pincode must be a 6-digit number.");
-  }
+  // // Validate pincode
+  // if (isNaN(pincode) || pincode.length !== 6) {
+  //   return res.status(400).json("Pincode must be a 6-digit number.");
+  // }
 
   const sql = `
       UPDATE laboratory

@@ -1,7 +1,8 @@
 const db = require("../../db");
 
 const CHECK_LOGIN_ASSISTANT = (req, res) => {
-  const sql = "SELECT * FROM assistant WHERE `mobileno` = ? AND `password` = ? AND is_deleted='0'";
+  const sql =
+    "SELECT * FROM assistant WHERE `mobileno` = ? AND `password` = ? AND is_deleted='0'";
   db.query(sql, [req.body.mobileno, req.body.password], (err, data) => {
     if (err) {
       console.error("Login Error:", err);
@@ -59,6 +60,54 @@ const UPDATE_FCM_TOKEN = (req, res) => {
   });
 };
 
+// const GET_TODAY_APPOINTMENT = (req, res) => {
+//   const technicianId = req.query.technician_id;
+
+//   if (!technicianId) {
+//     return res.status(400).json({ message: "technician_id is required" });
+//   }
+
+//   // First query to get the appointment_id(s) assigned to the technician
+//   const sql1 = "SELECT * FROM assign_appointment WHERE technician_id = ?";
+//   db.query(sql1, [technicianId], (err, assignData) => {
+//     if (err) {
+//       return res
+//         .status(500)
+//         .json({ message: "Failed to fetch assigned appointments", error: err });
+//     }
+
+//     if (assignData.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ message: "No appointments found for the given technician" });
+//     }
+
+//     const appointmentIds = assignData.map((row) => row.appointment_id);
+//     console.log("----------" + appointmentIds.length);
+
+//     // Get today's date in DD/MM/YYYY format manually
+//     const todayDate = new Date();
+//     const dd = String(todayDate.getDate()).padStart(2, "0"); // Ensure 2-digit format
+//     const mm = String(todayDate.getMonth() + 1).padStart(2, "0"); // Month is 0-based, add 1
+//     const yyyy = todayDate.getFullYear();
+//     const today = `${dd}/${mm}/${yyyy}`;
+
+//     // Second query to fetch appointment details for the matched appointment_ids
+//     const sql2 =
+//       "SELECT * FROM appointment WHERE time LIKE ? AND appointment_id IN (?) AND status = 'Unassigned'";
+//     db.query(sql2, [`${today}%`, appointmentIds], (err, appointmentData) => {
+//       if (err) {
+//         return res.status(500).json({
+//           message: "Failed to fetch appointment details",
+//           error: err,
+//         });
+//       }
+
+//       return res.json(appointmentData);
+//     });
+//   });
+// };
+
 const GET_TODAY_APPOINTMENT = (req, res) => {
   const technicianId = req.query.technician_id;
 
@@ -66,8 +115,9 @@ const GET_TODAY_APPOINTMENT = (req, res) => {
     return res.status(400).json({ message: "technician_id is required" });
   }
 
-  // First query to get the appointment_id(s) assigned to the technician
-  const sql1 = "SELECT * FROM assign_appointment WHERE technician_id = ?";
+  // Query to get the appointment_id(s) assigned to the technician
+  const sql1 =
+    "SELECT appointment_id FROM assign_appointment WHERE technician_id = ?";
   db.query(sql1, [technicianId], (err, assignData) => {
     if (err) {
       return res
@@ -82,24 +132,33 @@ const GET_TODAY_APPOINTMENT = (req, res) => {
     }
 
     const appointmentIds = assignData.map((row) => row.appointment_id);
-    console.log("----------" + appointmentIds.length);
+    if (appointmentIds.length === 0) {
+      return res.status(404).json({ message: "No valid appointments found" });
+    }
 
-    // Get today's date in DD/MM/YYYY format manually
-    const todayDate = new Date();
-    const dd = String(todayDate.getDate()).padStart(2, "0"); // Ensure 2-digit format
-    const mm = String(todayDate.getMonth() + 1).padStart(2, "0"); // Month is 0-based, add 1
-    const yyyy = todayDate.getFullYear();
-    const today = `${dd}/${mm}/${yyyy}`;
+    // Second query to fetch today's appointments that are 'Unassigned'
+    const sql2 = `
+  SELECT * FROM appointment 
+  WHERE (
+    STR_TO_DATE(time, '%d/%m/%Y') = CURDATE() OR
+    STR_TO_DATE(time, '%d-%m-%Y') = CURDATE() OR
+    STR_TO_DATE(time, '%d %M %Y') = CURDATE()
+  ) 
+  AND appointment_id IN (${appointmentIds.map(() => "?").join(",")}) 
+  AND status = 'Assigned'`;
 
-    // Second query to fetch appointment details for the matched appointment_ids
-    const sql2 =
-      "SELECT * FROM appointment WHERE time LIKE ? AND appointment_id IN (?) AND status = 'Unassigned'";
-    db.query(sql2, [`${today}%`, appointmentIds], (err, appointmentData) => {
+    db.query(sql2, appointmentIds, (err, appointmentData) => {
       if (err) {
         return res.status(500).json({
           message: "Failed to fetch appointment details",
           error: err,
         });
+      }
+
+      if (appointmentData.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No appointments found for today" });
       }
 
       return res.json(appointmentData);
@@ -202,35 +261,6 @@ const GET_ASSIGN_APPOINTMENT = (req, res) => {
   });
 };
 
-const UPDATE_APPOINTEMNT_STATUS = (req, res) => {
-  const { id } = req.params;
-
-  const sql = `
-      UPDATE appointment
-      SET status = 'Completed'
-      WHERE appointment_id = ?
-    `;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error updating appointment status:", err);
-      return res
-        .status(500)
-        .json({ message: "Failed to update appointment status" });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Appointment not found" });
-    }
-
-    // Emit notification to all connected clients
-    io.emit("appointmentUpdated", { id, status: "Completed" });
-
-    return res
-      .status(200)
-      .json({ message: "Appointment status updated to completed" });
-  });
-};
-
 // const UPDATE_APPOINTEMNT_STATUS = (req, res) => {
 //   const { id } = req.params;
 
@@ -250,11 +280,40 @@ const UPDATE_APPOINTEMNT_STATUS = (req, res) => {
 //     if (result.affectedRows === 0) {
 //       return res.status(404).json({ message: "Appointment not found" });
 //     }
+
+//     // Emit notification to all connected clients
+//     io.emit("appointmentUpdated", { id, status: "Completed" });
+
 //     return res
 //       .status(200)
 //       .json({ message: "Appointment status updated to completed" });
 //   });
 // };
+
+const UPDATE_APPOINTEMNT_STATUS = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+      UPDATE appointment
+      SET status = 'Completed'
+      WHERE appointment_id = ?
+    `;
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error updating appointment status:", err);
+      return res
+        .status(500)
+        .json({ message: "Failed to update appointment status" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    return res
+      .status(200)
+      .json({ message: "Appointment status updated to completed" });
+  });
+};
 
 const SEND_OTP = (req, res) => {
   const { mobileno } = req.body;
@@ -474,6 +533,72 @@ const COMPLETED_APPOINTMENT_FOR_TECHNICIAN = (req, res) => {
   });
 };
 
+// const REJECTED_APPOINTMENT = (req, res) => {
+//   console.log("Request body:", req.body);
+
+//   const { appointment_id, technician_id, reason } = req.body;
+
+//   const insertSql = `
+//     INSERT INTO rejected_appointment_by_technician
+//     (appointment_id, technician_id, reason)
+//     VALUES (?, ?, ?)
+//   `;
+
+//   const updateSql = `
+//     UPDATE appointment
+//     SET status = 'Unassigned', rejected_status = '1'
+//     WHERE appointment_id = ?
+//   `;
+
+//   db.beginTransaction((err) => {
+//     if (err) {
+//       console.error("Transaction Error:", err);
+//       return res.status(500).json("Transaction initiation failed");
+//     }
+
+//     // Insert into rejected_appointment_by_technician
+//     db.query(
+//       insertSql,
+//       [appointment_id, technician_id, reason],
+//       (err, result) => {
+//         if (err) {
+//           console.error("SQL Insert Error:", err);
+//           return db.rollback(() =>
+//             res.status(500).json("Failed to add appointment rejection")
+//           );
+//         }
+
+//         console.log("Insert Result:", result);
+
+//         // Update appointment table
+//         db.query(updateSql, [appointment_id], (err, updateResult) => {
+//           if (err) {
+//             console.error("SQL Update Error:", err);
+//             return db.rollback(() =>
+//               res.status(500).json("Failed to update appointment status")
+//             );
+//           }
+
+//           console.log("Update Result:", updateResult);
+
+//           db.commit((err) => {
+//             if (err) {
+//               console.error("Transaction Commit Error:", err);
+//               return db.rollback(() =>
+//                 res.status(500).json("Transaction commit failed")
+//               );
+//             }
+
+//             return res
+//               .status(200)
+//               .json("Appointment rejected and status updated successfully");
+//           });
+//         });
+//       }
+//     );
+//   });
+// };
+
 const REJECTED_APPOINTMENT = (req, res) => {
   console.log("Request body:", req.body);
 
@@ -491,52 +616,96 @@ const REJECTED_APPOINTMENT = (req, res) => {
     WHERE appointment_id = ?
   `;
 
+  const logSql = `
+    INSERT INTO log_master 
+    (appointment_id, status, updated_by, updated_at) 
+    VALUES (?, 'Rejected', ?, NOW())
+  `;
+
+  const getTechnicianNameSql = `
+    SELECT name FROM assistant WHERE assistant_id = ?
+  `;
+
   db.beginTransaction((err) => {
     if (err) {
       console.error("Transaction Error:", err);
       return res.status(500).json("Transaction initiation failed");
     }
 
-    // Insert into rejected_appointment_by_technician
-    db.query(
-      insertSql,
-      [appointment_id, technician_id, reason],
-      (err, result) => {
-        if (err) {
-          console.error("SQL Insert Error:", err);
-          return db.rollback(() =>
-            res.status(500).json("Failed to add appointment rejection")
-          );
-        }
+    // Fetch technician name from assistant table
+    db.query(getTechnicianNameSql, [technician_id], (err, result) => {
+      if (err) {
+        console.error("SQL Fetch Error:", err);
+        return db.rollback(() =>
+          res.status(500).json("Failed to fetch technician name")
+        );
+      }
 
-        console.log("Insert Result:", result);
+      if (result.length === 0) {
+        return db.rollback(() => res.status(404).json("Technician not found"));
+      }
 
-        // Update appointment table
-        db.query(updateSql, [appointment_id], (err, updateResult) => {
+      const technician_name = result[0].name;
+
+      // Insert into rejected_appointment_by_technician
+      db.query(
+        insertSql,
+        [appointment_id, technician_id, reason],
+        (err, insertResult) => {
           if (err) {
-            console.error("SQL Update Error:", err);
+            console.error("SQL Insert Error:", err);
             return db.rollback(() =>
-              res.status(500).json("Failed to update appointment status")
+              res.status(500).json("Failed to add appointment rejection")
             );
           }
 
-          console.log("Update Result:", updateResult);
+          console.log("Insert Result:", insertResult);
 
-          db.commit((err) => {
+          // Update appointment table
+          db.query(updateSql, [appointment_id], (err, updateResult) => {
             if (err) {
-              console.error("Transaction Commit Error:", err);
+              console.error("SQL Update Error:", err);
               return db.rollback(() =>
-                res.status(500).json("Transaction commit failed")
+                res.status(500).json("Failed to update appointment status")
               );
             }
 
-            return res
-              .status(200)
-              .json("Appointment rejected and status updated successfully");
+            console.log("Update Result:", updateResult);
+
+            // Insert into log_master table
+            db.query(
+              logSql,
+              [appointment_id, technician_name],
+              (err, logResult) => {
+                if (err) {
+                  console.error("SQL Log Insert Error:", err);
+                  return db.rollback(() =>
+                    res.status(500).json("Failed to insert log entry")
+                  );
+                }
+
+                console.log("Log Insert Result:", logResult);
+
+                db.commit((err) => {
+                  if (err) {
+                    console.error("Transaction Commit Error:", err);
+                    return db.rollback(() =>
+                      res.status(500).json("Transaction commit failed")
+                    );
+                  }
+
+                  return res
+                    .status(200)
+                    .json(
+                      "Appointment rejected, status updated, and log entry added successfully"
+                    );
+                });
+              }
+            );
           });
-        });
-      }
-    );
+        }
+      );
+    });
   });
 };
 
@@ -591,12 +760,16 @@ const DELETE_ASSISTANT = (req, res) => {
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error soft deleting Assistant:", err);
-      return res.status(500).json({ message: "Failed to soft delete Assistant" });
+      return res
+        .status(500)
+        .json({ message: "Failed to soft delete Assistant" });
     }
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Assistant not found" });
     }
-    return res.status(200).json({ message: "Assistant soft deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: "Assistant soft deleted successfully" });
   });
 };
 
@@ -611,6 +784,29 @@ const GET_ALL_TEST_REMARK_APP = (req, res) => {
   });
 };
 
+const GET_Add_DETAILS_BY_TECHNICIAN = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT ar.*, a.* 
+    FROM appointment_replies ar
+    LEFT JOIN appointment a 
+      ON ar.appointment_nos = a.appointment_no
+    WHERE a.appointment_id = ?`;
+
+  db.query(sql, [id], (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res
+        .status(500)
+        .json({ message: "Failed to fetch appointment details" });
+    }
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    res.json(data);
+  });
+};
 
 module.exports = {
   CHECK_LOGIN_ASSISTANT,
@@ -628,4 +824,5 @@ module.exports = {
   GET_REJECTED_APPOINTMENT,
   DELETE_ASSISTANT,
   GET_ALL_TEST_REMARK_APP,
+  GET_Add_DETAILS_BY_TECHNICIAN,
 };

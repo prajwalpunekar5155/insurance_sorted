@@ -98,11 +98,20 @@ const EditAssistant = () => {
       newErrors.email = "Please enter a valid email address.";
     }
 
-    // Pincode validation (only numeric and 6 digits)
+    // Pincode validation
     if (!pincode) {
       newErrors.pincode = "Pincode is required!";
-    } else if (!/^[0-9]{6}$/.test(pincode)) {
-      newErrors.pincode = "Pincode must be 6 digits.";
+    } else {
+      // Split pincodes by comma and validate each one
+      const pincodeArray = pincode.split(",").map((pin) => pin.trim());
+
+      for (let pin of pincodeArray) {
+        if (!/^\d{6}$/.test(pin)) {
+          newErrors.pincode =
+            "Each pincode must be exactly 6 digits and only contain numbers.";
+          break; // Stop validation on first invalid pincode
+        }
+      }
     }
 
     // Username and password validation
@@ -111,6 +120,32 @@ const EditAssistant = () => {
 
     return newErrors;
   };
+  const handleChangePincode = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "pincode") {
+      // Remove non-numeric characters
+      let cleanedValue = value.replace(/\D/g, "");
+
+      // Add commas after every 6 digits
+      let formattedValue = cleanedValue.replace(/(\d{6})(?=\d)/g, "$1,");
+
+      setFormData({
+        ...formData,
+        pincode: formattedValue,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+
+    setError({
+      ...error,
+      [name]: "", // Clear error for the field being edited
+    });
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -118,7 +153,7 @@ const EditAssistant = () => {
     setMessage("");
     setError("");
 
-    // Validate the form and set errors
+    // Validate the form and set error
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
@@ -161,24 +196,20 @@ const EditAssistant = () => {
 
   return (
     <div
+      className="main-wrapper"
       style={{
-        padding: "30px",
-        fontFamily: "'Roboto', sans-serif",
-        backgroundColor: "#f9fafc",
-        minHeight: "100vh",
+        border: "2px solid",
+        borderRadius: "10px",
+        paddingLeft: "50px",
+        paddingRight: "50px",
+        backgroundColor: "#fff",
       }}
     >
-      <div
-        style={{
-          maxWidth: "600px",
-          margin: "0 auto",
-          background: "#fff",
-          borderRadius: "10px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-          padding: "30px",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {/* <div className="page-wrapper"> */}
+      <div style={{ flex: 1, backgroundColor: "#fff", paddingBottom: "10px" }}>
+        <div
+          style={{ display: "flex", gap: "20px", justifyContent: "flex-end" }}
+        >
           <IconButton onClick={() => window.history.back()} color="primary">
             <CloseIcon />
           </IconButton>
@@ -190,193 +221,196 @@ const EditAssistant = () => {
             textAlign: "center",
           }}
         >
-          Edit Technician
+          Update Technician Details
         </h2>
 
-        {/* Form */}
-        <form onSubmit={handleSave}>
-          {/* Name */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Name:
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter name"
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {fieldErrors.name && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.name}
-            </p>
-          )}
+        <form
+          onSubmit={handleSave}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            maxWidth: "100%",
+          }}
+        >
+          <div style={{ display: "flex", gap: "20px", width: "100%" }}>
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="name" style={{ fontWeight: "bold" }}>
+                Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.name && (
+                <p style={{ color: "red", fontSize: "12px" }}>{error.name}</p>
+              )}
+            </div>
 
-          {/* Mobile Number */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Mobile Number:
-          </label>
-          <input
-            type="text"
-            name="mobileno"
-            value={formData.mobileno}
-            onChange={handleChange}
-            placeholder="Enter mobile number"
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {fieldErrors.mobileno && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.mobileno}
-            </p>
-          )}
+            {/* Mobile Number */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="mobileno" style={{ fontWeight: "bold" }}>
+                Mobile Number
+              </label>
+              <input
+                type="number"
+                name="mobileno"
+                value={formData.mobileno}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.mobileno && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {error.mobileno}
+                </p>
+              )}
+            </div>
 
-          {/* Email */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Email:
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter email"
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {fieldErrors.email && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.email}
-            </p>
-          )}
-
-          {/* Pincode */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Pincode:
-          </label>
-          <input
-            type="text"
-            name="pincode"
-            value={formData.pincode}
-            onChange={handleChange}
-            placeholder="Enter pincode"
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {fieldErrors.pincode && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.pincode}
-            </p>
-          )}
-
-          {/* Username */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Username:
-          </label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Enter username"
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              fontSize: "1rem",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {fieldErrors.username && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.username}
-            </p>
-          )}
-
-          {/* Password */}
-          <label style={{ fontWeight: "bold", marginBottom: "5px" }}>
-            Password:
-          </label>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              style={{
-                width: "100%",
-                padding: "10px",
-                marginBottom: "20px",
-                fontSize: "1rem",
-                borderRadius: "5px",
-                border: "1px solid #ccc",
-              }}
-            />
-            <IconButton
-              onClick={togglePasswordVisibility}
-              style={{
-                position: "absolute",
-                top: "50%",
-                right: "10px",
-                transform: "translateY(-50%)",
-              }}
-            >
-              {showPassword ? <Visibility /> : <VisibilityOff />}
-            </IconButton>
+            {/* Email */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="email" style={{ fontWeight: "bold" }}>
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.email && (
+                <p style={{ color: "red", fontSize: "12px" }}>{error.email}</p>
+              )}
+            </div>
           </div>
-          {fieldErrors.password && (
-            <p style={{ color: "red", fontSize: "0.9rem" }}>
-              {fieldErrors.password}
-            </p>
-          )}
 
-          {/* Error Message */}
-          {error && <p style={{ color: "red", fontSize: "0.9rem" }}>{error}</p>}
+          <div style={{ display: "flex", gap: "20px", width: "100%" }}>
+            {/* Username */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="username" style={{ fontWeight: "bold" }}>
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.username && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {error.username}
+                </p>
+              )}
+            </div>
 
-          {/* Save Button */}
-          <button
-            type="submit"
+            {/* Password */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="password" style={{ fontWeight: "bold" }}>
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.password && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {error.password}
+                </p>
+              )}
+            </div>
+            {/* Pincode */}
+            <div style={{ flex: "1", minWidth: "200px" }}>
+              <label htmlFor="pincode" style={{ fontWeight: "bold" }}>
+                Pincode
+              </label>
+              <input
+                type="text"
+                name="pincode"
+                placeholder="Enter multiple pincodes"
+                value={formData.pincode}
+                onChange={handleChangePincode}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                }}
+              />
+              {error.pincode && (
+                <p style={{ color: "red", fontSize: "12px" }}>
+                  {error.pincode}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div
             style={{
               width: "100%",
-              padding: "10px",
-              fontSize: "1rem",
-              backgroundColor: "#4e73df",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
+              display: "flex",
+              justifyContent: "center",
             }}
           >
-            Save
-          </button>
+            <button
+              type="submit"
+              style={{
+                padding: "12px 30px",
+                backgroundColor: "#2E37A4",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "16px",
+              }}
+            >
+              Add Technician
+            </button>
+          </div>
         </form>
 
         {/* Success Message */}

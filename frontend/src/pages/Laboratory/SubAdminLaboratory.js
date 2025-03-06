@@ -1007,7 +1007,7 @@ function Laboratory() {
                         }}
                       >
                         <p style={{ margin: 0, color: "#4e73df" }}>
-                          <strong>Title:</strong> {selectedAppointment.title}
+                          <strong>Centre Name:</strong> {selectedAppointment.title}
                         </p>
                       </div>
                     </div>
@@ -1088,7 +1088,7 @@ function Laboratory() {
                         }}
                       >
                         <p style={{ margin: 0, color: "#4e73df" }}>
-                          <strong>Name:</strong> {selectedAppointment.address}
+                          <strong>Owner Name:</strong> {selectedAppointment.name}
                         </p>
                       </div>
                     </div>
@@ -1147,48 +1147,7 @@ function Laboratory() {
                         </p>
                       </div>
                     </div>
-                    <div className="col-md-12">
-                      <div
-                        className="p-3 rounded"
-                        style={{
-                          backgroundColor: "#e7f1ff",
-                          borderLeft: "4px solid #4e73df",
-                        }}
-                      >
-                        <p style={{ margin: 0, color: "#4e73df" }}>
-                          <strong>Clinet Name:</strong>{" "}
-                          {selectedAppointment.client_name}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="col-md-12">
-                      <div
-                        className="p-3 rounded"
-                        style={{
-                          backgroundColor: "#e7f1ff",
-                          borderLeft: "4px solid #4e73df",
-                        }}
-                      >
-                        <p style={{ margin: 0, color: "#4e73df" }}>
-                          <strong>client Email:</strong>{" "}
-                          {selectedAppointment.password}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="col-md-12">
-                      <div
-                        className="p-3 rounded"
-                        style={{
-                          backgroundColor: "#e7f1ff",
-                          borderLeft: "4px solid #4e73df",
-                        }}
-                      >
-                        <p style={{ margin: 0, color: "#4e73df" }}>
-                          <strong>Client Address:</strong>{" "}
-                          {selectedAppointment.password}
-                        </p>
-                      </div>
-                    </div>
+                 
                     {/* <div className="col-md-12 text-end mt-4">
                       <Link
                         to="/ReplyAppointment"

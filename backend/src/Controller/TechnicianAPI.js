@@ -168,10 +168,6 @@ const UPDATE_ASSISTANT = (req, res) => {
   const { id } = req.params;
   const { name, mobileno, email, pincode, username, password } = req.body;
 
-  if (!name || !mobileno || !email || !pincode || !username || !password) {
-    return res.status(400).json("All fields are required!");
-  }
-
   const sql = `
       UPDATE assistant
       SET name = ?, mobileno = ?, email = ?, pincode = ?, username = ?, password = ?
@@ -219,6 +215,108 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+// const ASSIGN_TECHNICIAN = (req, res) => {
+//   console.log("Request body:", req.body);
+
+//   const { technicianId, appointmentIds } = req.body;
+
+//   if (!technicianId || !appointmentIds || !Array.isArray(appointmentIds)) {
+//     return res
+//       .status(400)
+//       .json("Technician ID and Appointment IDs are required!");
+//   }
+
+//   // Insert Technician into assign_appointment
+//   const assignments = appointmentIds.map((appointmentId) => [
+//     appointmentId,
+//     technicianId,
+//   ]);
+
+//   const assignSql = `
+//       INSERT INTO assign_appointment (appointment_id, technician_id)
+//       VALUES ?
+//     `;
+
+//   db.query(assignSql, [assignments], (assignErr, assignResult) => {
+//     if (assignErr) {
+//       console.error("SQL Error on Insert:", assignErr);
+//       return res
+//         .status(500)
+//         .json("Failed to assign technicians to appointments");
+//     }
+
+//     console.log("Insert Result:", assignResult);
+
+//     // Update appointment status after assignment
+//     const updateSql = `
+//         UPDATE appointment
+//         SET status = 'Assigned'
+//         WHERE appointment_id IN (?)
+//       `;
+
+//     db.query(updateSql, [appointmentIds], (updateErr, updateResult) => {
+//       if (updateErr) {
+//         console.error("SQL Error on Update:", updateErr);
+//         return res
+//           .status(500)
+//           .json("Failed to update appointment statuses to 'Assigned'");
+//       }
+
+//       console.log("Update Result:", updateResult);
+
+//       // Fetch FCM token after insertion
+//       const getTokenSql = `
+//           SELECT a.fcmtoken_key
+//           FROM assistant a
+//           JOIN assign_appointment aa ON a.assistant_id = aa.technician_id
+//           WHERE aa.technician_id = ?
+//           LIMIT 1
+//         `;
+
+//       db.query(getTokenSql, [technicianId], (tokenErr, tokenResult) => {
+//         if (tokenErr) {
+//           console.error("SQL Error on Fetching FCM Token:", tokenErr);
+//           return res.status(500).json("Failed to fetch FCM token");
+//         }
+
+//         if (tokenResult.length === 0 || !tokenResult[0].fcmtoken_key) {
+//           console.warn("No FCM token found for the given technician.");
+//           return res.status(404).json("FCM token not found for technician");
+//         }
+
+//         const fcmToken = tokenResult[0].fcmtoken_key;
+//         console.log("Fetched FCM Token:", fcmToken);
+
+//         // Send Push Notification after success
+//         const message = {
+//           notification: {
+//             title: "New Appointment Assigned",
+//             body: `You have been assigned ${appointmentIds.length} new appointments.`,
+//           },
+//           token: fcmToken, // Technician's FCM token
+//         };
+
+//         admin
+//           .messaging()
+//           .send(message)
+//           .then((response) => {
+//             console.log("Notification sent successfully:", response);
+//             return res.status(200).json({
+//               message:
+//                 "Technician assigned to appointments and notification sent successfully",
+//             });
+//           })
+//           .catch((error) => {
+//             console.error("Error sending notification:", error);
+//             return res
+//               .status(500)
+//               .json("Technician assigned but notification failed.");
+//           });
+//       });
+//     });
+//   });
+// };
+
 const ASSIGN_TECHNICIAN = (req, res) => {
   console.log("Request body:", req.body);
 
@@ -230,98 +328,266 @@ const ASSIGN_TECHNICIAN = (req, res) => {
       .json("Technician ID and Appointment IDs are required!");
   }
 
-  // Insert Technician into assign_appointment
-  const assignments = appointmentIds.map((appointmentId) => [
-    appointmentId,
-    technicianId,
-  ]);
+  // Fetch technician name
+  const getTechnicianNameSql = `SELECT name FROM assistant WHERE assistant_id = ?`;
 
-  const assignSql = `
-      INSERT INTO assign_appointment (appointment_id, technician_id)
-      VALUES ?
-    `;
-
-  db.query(assignSql, [assignments], (assignErr, assignResult) => {
-    if (assignErr) {
-      console.error("SQL Error on Insert:", assignErr);
-      return res
-        .status(500)
-        .json("Failed to assign technicians to appointments");
+  db.query(getTechnicianNameSql, [technicianId], (nameErr, nameResult) => {
+    if (nameErr) {
+      console.error("SQL Error on Fetching Technician Name:", nameErr);
+      return res.status(500).json("Failed to fetch technician name");
     }
 
-    console.log("Insert Result:", assignResult);
+    if (nameResult.length === 0) {
+      return res.status(404).json("Technician not found");
+    }
 
-    // Update appointment status after assignment
-    const updateSql = `
-        UPDATE appointment
-        SET status = 'Assigned'
-        WHERE appointment_id IN (?)
+    const technicianName = nameResult[0].name;
+
+    // Insert Technician into assign_appointment
+    const assignments = appointmentIds.map((appointmentId) => [
+      appointmentId,
+      technicianId,
+    ]);
+
+    const assignSql = `
+        INSERT INTO assign_appointment (appointment_id, technician_id)
+        VALUES ?
       `;
 
-    db.query(updateSql, [appointmentIds], (updateErr, updateResult) => {
-      if (updateErr) {
-        console.error("SQL Error on Update:", updateErr);
+    db.query(assignSql, [assignments], (assignErr, assignResult) => {
+      if (assignErr) {
+        console.error("SQL Error on Insert:", assignErr);
         return res
           .status(500)
-          .json("Failed to update appointment statuses to 'Assigned'");
+          .json("Failed to assign technicians to appointments");
       }
 
-      console.log("Update Result:", updateResult);
+      console.log("Insert Result:", assignResult);
 
-      // Fetch FCM token after insertion
-      const getTokenSql = `
-          SELECT a.fcmtoken_key 
-          FROM assistant a 
-          JOIN assign_appointment aa ON a.assistant_id = aa.technician_id
-          WHERE aa.technician_id = ?
-          LIMIT 1
+      // Update appointment status after assignment
+      const updateSql = `
+          UPDATE appointment
+          SET status = 'Assigned'
+          WHERE appointment_id IN (?)
         `;
 
-      db.query(getTokenSql, [technicianId], (tokenErr, tokenResult) => {
-        if (tokenErr) {
-          console.error("SQL Error on Fetching FCM Token:", tokenErr);
-          return res.status(500).json("Failed to fetch FCM token");
+      db.query(updateSql, [appointmentIds], (updateErr, updateResult) => {
+        if (updateErr) {
+          console.error("SQL Error on Update:", updateErr);
+          return res
+            .status(500)
+            .json("Failed to update appointment statuses to 'Assigned'");
         }
 
-        if (tokenResult.length === 0 || !tokenResult[0].fcmtoken_key) {
-          console.warn("No FCM token found for the given technician.");
-          return res.status(404).json("FCM token not found for technician");
-        }
+        console.log("Update Result:", updateResult);
 
-        const fcmToken = tokenResult[0].fcmtoken_key;
-        console.log("Fetched FCM Token:", fcmToken);
+        // Insert log entries into log_master with technician name
+        const logEntries = appointmentIds.map((appointmentId) => [
+          appointmentId,
+          "Assigned", // Status
+          technicianName, // Technician Name instead of ID
+          new Date(), // Updated at
+        ]);
 
-        // Send Push Notification after success
-        const message = {
-          notification: {
-            title: "New Appointment Assigned",
-            body: `You have been assigned ${appointmentIds.length} new appointments.`,
-          },
-          token: fcmToken, // Technician's FCM token
-        };
+        const logSql = `
+            INSERT INTO log_master (appointment_id, status, updated_by, updated_at)
+            VALUES ?
+          `;
 
-        admin
-          .messaging()
-          .send(message)
-          .then((response) => {
-            console.log("Notification sent successfully:", response);
-            return res.status(200).json({
-              message:
-                "Technician assigned to appointments and notification sent successfully",
-            });
-          })
-          .catch((error) => {
-            console.error("Error sending notification:", error);
-            return res
-              .status(500)
-              .json("Technician assigned but notification failed.");
+        db.query(logSql, [logEntries], (logErr, logResult) => {
+          if (logErr) {
+            console.error("SQL Error on Log Insert:", logErr);
+            return res.status(500).json("Failed to insert log entries");
+          }
+
+          console.log("Log Insert Result:", logResult);
+
+          // Fetch FCM token after log insertion
+          const getTokenSql = `
+              SELECT a.fcmtoken_key 
+              FROM assistant a 
+              JOIN assign_appointment aa ON a.assistant_id = aa.technician_id
+              WHERE aa.technician_id = ?
+              LIMIT 1
+            `;
+
+          db.query(getTokenSql, [technicianId], (tokenErr, tokenResult) => {
+            if (tokenErr) {
+              console.error("SQL Error on Fetching FCM Token:", tokenErr);
+              return res.status(500).json("Failed to fetch FCM token");
+            }
+
+            if (tokenResult.length === 0 || !tokenResult[0].fcmtoken_key) {
+              console.warn("No FCM token found for the given technician.");
+              return res.status(404).json("FCM token not found for technician");
+            }
+
+            const fcmToken = tokenResult[0].fcmtoken_key;
+            console.log("Fetched FCM Token:", fcmToken);
+
+            // Send Push Notification after success
+            const message = {
+              notification: {
+                title: "New Appointment Assigned",
+                body: `You have been assigned ${appointmentIds.length} new appointments.`,
+              },
+              token: fcmToken, // Technician's FCM token
+            };
+
+            admin
+              .messaging()
+              .send(message)
+              .then((response) => {
+                console.log("Notification sent successfully:", response);
+                return res.status(200).json({
+                  message:
+                    "Technician assigned to appointments, log created, and notification sent successfully",
+                });
+              })
+              .catch((error) => {
+                console.error("Error sending notification:", error);
+                return res
+                  .status(500)
+                  .json(
+                    "Technician assigned, log created, but notification failed."
+                  );
+              });
           });
+        });
       });
     });
   });
 };
 
+const ASSIGN_SUBADMIN = (req, res) => {
+  console.log("Request body:", req.body);
 
+  const { subadminId, appointmentIds } = req.body;
+
+  if (!subadminId || !appointmentIds || !Array.isArray(appointmentIds)) {
+    return res
+      .status(400)
+      .json("Subadmin ID and Appointment IDs are required!");
+  }
+
+  // Step 1: Fetch city from subadmin_master using subadminId
+  const cityQuery = `SELECT city FROM subadminmaster WHERE subadmin_id = ?`;
+
+  db.query(cityQuery, [subadminId], (cityErr, cityResult) => {
+    if (cityErr || cityResult.length === 0) {
+      console.error("SQL Error on Fetching City:", cityErr);
+      return res.status(500).json("Failed to fetch city for subadmin");
+    }
+
+    const subadminCity = cityResult[0].city;
+    console.log("Fetched City:", subadminCity);
+
+    // Step 2: Insert Subadmin into assign_appointment_subadmin
+    const assignments = appointmentIds.map((appointmentId) => [
+      appointmentId,
+      subadminId,
+    ]);
+
+    const assignSql = `
+        INSERT INTO assign_appointment_subadmin (appointment_id, subadmin_id)
+        VALUES ?
+      `;
+
+    db.query(assignSql, [assignments], (assignErr, assignResult) => {
+      if (assignErr) {
+        console.error("SQL Error on Insert:", assignErr);
+        return res
+          .status(500)
+          .json("Failed to assign subadmins to appointments");
+      }
+
+      console.log("Insert Result:", assignResult);
+
+      // Step 3: Update appointment status after assignment
+      const updateSql = `
+          UPDATE appointment
+          SET status = 'Assigned_to_subadmin'
+          WHERE appointment_id IN (?)
+        `;
+
+      db.query(updateSql, [appointmentIds], (updateErr, updateResult) => {
+        if (updateErr) {
+          console.error("SQL Error on Update:", updateErr);
+          return res
+            .status(500)
+            .json("Failed to update appointment statuses to 'Assigned'");
+        }
+
+        console.log("Update Result:", updateResult);
+
+        // Step 4: Insert log entries into log_master using city instead of subadminId
+        const logEntries = appointmentIds.map((appointmentId) => [
+          appointmentId,
+          "Assigned_to_subadmin", // Status
+          subadminCity, // Store city instead of subadmin_id
+          new Date(), // Updated at
+        ]);
+
+        const logSql = `
+            INSERT INTO log_master (appointment_id, status, updated_by, updated_at)
+            VALUES ?
+          `;
+
+        db.query(logSql, [logEntries], (logErr, logResult) => {
+          if (logErr) {
+            console.error("SQL Error on Log Insert:", logErr);
+            return res.status(500).json("Failed to insert log entries");
+          }
+
+          console.log("Log Insert Result:", logResult);
+
+          return res.status(200).json({
+            message:
+              "Subadmin assigned to appointments and log created successfully",
+          });
+        });
+      });
+    });
+  });
+};
+
+const GET_LOG_DETAILS_TECHNICIAN = (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json("Appointment ID is required!");
+  }
+
+  const query = `
+    SELECT 
+      lm.log_id,
+      lm.appointment_id,
+      a.appointment_no,
+      lm.status,
+      lm.updated_by AS technician_id,
+      ast.name AS technician_name,
+      lm.updated_at
+    FROM log_master lm
+    JOIN appointment a ON lm.appointment_id = a.appointment_id
+    JOIN assistant ast ON lm.updated_by = ast.assistant_id
+    WHERE lm.appointment_id = ?
+  `;
+
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error("SQL Error:", err);
+      return res.status(500).json("Failed to fetch log details");
+    }
+
+    if (result.length === 0) {
+      return res
+        .status(404)
+        .json("No log details found for the given appointment ID");
+    }
+
+    return res.status(200).json(result);
+  });
+};
 
 module.exports = {
   GET_ALLAPPOINTMENT_FOR_TECHNICIAN,
@@ -335,4 +601,6 @@ module.exports = {
   UPDATE_ASSISTANT,
   DELETE_ASSISTANT,
   ASSIGN_TECHNICIAN,
+  GET_LOG_DETAILS_TECHNICIAN,
+  ASSIGN_SUBADMIN,
 };
